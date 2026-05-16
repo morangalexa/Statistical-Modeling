@@ -194,7 +194,3 @@ The American League appears to have a slightly higher slugging percentage, on av
 
 The National League makes pitchers hit at bat instead of assigning a designated hitter on the batting roster, hence the DH is used to increase hits. This rule has changed since 2022, however, so this difference in slugging percentage should decrease in years to come. 
 
-  
-```
-
-
