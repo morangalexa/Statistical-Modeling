@@ -11,6 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Front Matter - Clean Environment, Load Libraries, User Defined Functions
+
+Project Uses `Lahman` package from Base R
+
 ```{r}
 rm(list = ls())
 
@@ -18,7 +21,6 @@ library(tidyverse)
 library(dplyr)
 library(Lahman)
 
-Ins <- read.csv("~/Downloads/L02_Insurance_m.csv")
 ```
 
 ### Pipeline Error Identification and Fix
