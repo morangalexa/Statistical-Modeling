@@ -1,0 +1,230 @@
+---
+title: "Data Tidying - Insurance and Baseball"
+author: Greer Moran
+output: html_document
+date: "Thursday, September 11, 2025"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Front Matter - Clean Environment, Load Libraries, User Defined Functions
+```{r}
+rm(list = ls())
+
+library(tidyverse)
+library(dplyr)
+library(Lahman)
+
+Ins <- read.csv("~/Downloads/L02_Insurance_m.csv")
+```
+
+### Pipeline Error Identification and Fix
+
+" mtcars |>
+    group_by(cyl) |>
+    summarize(avg_mpg = mean(mpg)) |>
+    filter(am == 1) "
+
+
+The filter() verb is nested inside the data set being tidied, with the aim of only taking observations with an entry of 1 for the `am` variable. 
+However, a summarize command has already been executed to get the mean of `mpg` for each `cyl` row entry. This means the filter() verb can not be executed past this, unless it related to an observational entry from the `cyl` or `avg_mpg` variable.
+
+To get what is desired, move the filter() verb and it's original argument to be piped before the group_by() function. The output is so,
+
+```{r}
+mtcars |>
+  filter(am == 1) |>
+  group_by(cyl) |>
+  summarize(avg_mpg = mean(mpg))
+```
+
+### Interpretation of Variable, N
+```{r}
+mtcars |>
+  group_by(cyl) |>
+  summarize(
+    N = n(),
+    avg_mpg = mean(mpg)
+  )
+```
+
+The data set mtcars gathers data from 32 different cars. `N` is statistically considered the count. So the count in this table is the number of cars recorded by cylinder value. 
+
+
+### Single Data Verb Function
+
+(a) Find the average of one of the variables. 
+USE: summarize()
+
+(b) Add a new column that is the ratio between two variables. 
+USE: mutate()
+
+(c) Sort the cases in descending order of a variable. 
+USE: arrange()
+
+(d) Create a new data table that includes only those cases that meet a criterion. 
+USE: filter()
+
+(e) From a data table with three categorical variables A, B, and C, and a quantitative variable X, produce a data frame that has the same cases but only the variables A and X. 
+USE: select()
+
+##
+### Define 2 new variables in the `Teams` data frame in the `Lahman` package and create the indicated plots.
+
+#### a. Define batting average (`BA`). Batting average is the ratio of hits (`H`) to at-bats (`AB`).
+```{r}
+Teams <- Teams |>
+  mutate(BA = H / AB)
+```
+#### b. Define slugging percentage (`SLG`). Slugging percentage is total bases earned by hits divided by at-bats. You will have to create a new variable that represents the total bases. To compute total bases, you get 1 for a single, 2 for a double, 3 for a triple, and 4 for a home run. For example, if a team has 11 total hits (5 singles, 3 doubles, 1 triple, and 2 home runs), then the team would have `5*1 + 3*2 + 1*3 + 2*4 = 22` total bases. The numbers in the dataset are larger, but this is just an example.
+```{r}
+Teams <- Teams |>
+  mutate(
+    X1B = H - (X2B + X3B + HR), 
+    totalBases = X1B + X2B*2 + X3B*3 + HR*4,
+    SLG = totalBases / AB
+    )
+```
+#### c. In order to show that the calculations in Part a. and Part b. were correct, display the first 10 rows of data. Include only the 5 variables: `yearID`, `teamID`, `franchID`, `BA` and `SLG`. 
+```{r}
+Teams |>
+  select(yearID, teamID, franchID, BA, SLG) |>
+  head(10)
+```
+#### d. Plot out the `SLG` (y-axis) as a function of `yearID` (x-axis), showing the individual teams and a smooth curve (i.e., use the loess smoother, which is the default, but remove the error/confidence interval bounds). NOTE: There should be a single smooth curve, not one for each team. When the instruction states that you should show individual teams, this simply means that each term should be shown as a point on the plot. You do NOT have to label each team with text, colors, shapes, etc.
+```{r}
+ggplot(
+  data = Teams,
+  mapping = aes(
+    x = yearID,
+    y = SLG
+  )
+) + geom_point() +
+  geom_smooth(
+  method = lm,
+  se = FALSE
+  ) +
+  labs(
+    x = "Year",
+    y = "Slugging Percentage"
+  )
+```
+
+#### e. Same as Part d., but plot `BA` as a function of year.
+```{r}
+ggplot(
+  data = Teams,
+  mapping = aes(
+    x = yearID,
+    y = BA
+  )
+) + geom_point() +
+  geom_smooth(
+  method = lm,
+  se = FALSE,
+  col = "red"
+  ) +
+  labs(
+    x = "Year",
+    y = "Batting Average"
+  )
+```
+
+### 5. Problem 7 - 
+#### Find top teams based on sluggling percentage. 
+
+#### a. Using the `Teams` data frame in the Lahman package, display the top-5 teams ranked in terms of slugging percentage (`SLG` which you computed in the previous question) in Major League Baseball history. Display the top 5 teams but only include the following variables: `yearID`, `lgID`, `teamID`, `franchID`, `SLG`. 
+```{r}
+Teams |>
+  select(yearID, lgID, teamID, franchID, SLG) |>
+  arrange(desc(SLG)) |>
+  head(5)
+```
+#### b. Repeat part a. using teams prior to 2000 (i.e, "prior to 2000" means the years ..., 1997, 1998, 1999.).
+```{r}
+Teams |>
+  filter(yearID < 2000) |>
+  select(yearID, lgID, teamID, franchID, SLG) |>
+  arrange(desc(SLG)) |>
+  head(5)
+```
+### 6. Problem 8 - 
+#### Using the `Teams` data frame in the `Lahman` package, create more plots
+
+#### a. Plot `SLG` (y axis) as a function of `yearID` (x-axis) since 1954 conditioned by league (American vs. National, see `lgID`). Include the loess smoother (with or without error/confidence intervals). 
+```{r}
+plot_Teams <- Teams |>
+  filter(yearID >= 1954)
+
+ggplot(
+  data = plot_Teams,
+  mapping = aes(
+    x = yearID,
+    y = SLG, 
+    shape = lgID,
+    color = lgID
+  )
+) +
+  geom_point()+
+  geom_smooth(
+    method = lm,
+    se = FALSE
+    ) + 
+  scale_color_manual(values = c("red", "skyblue")) +
+  labs(
+    x = "Year",
+    y = "Slugging Percentage", 
+    color = "League",
+    shape = "League"
+  )
+```
+
+#### b. Is slugging percentage typically higher in the American League (AL) or the National League (NL)? 
+
+The American League appears to have a slightly higher slugging percentage, on average, compared to the National League.
+
+#### c. (Ungraded) If you are familiar with baseball, can you explain why you see this pattern in the plot from Part a.?
+
+The National League makes pitchers hit at bat instead of assigning a designated hitter on the batting roster, hence the DH is used to increase hits. This rule has changed since 2022, however, so this difference in slugging percentage should decrease in years to come. 
+
+## 7. Recreate plot shown in Example 5a of Lecture 2 notes (side-by-side boxplots with the mean added to the boxplots.)
+### Plot aimed to answer: Do the medical charges depend on the region for smokers over 40?
+
+* NOTE: On the plot in the handout, the mean is represented by a red triangle, point down. Since the handouts were printed in gray scale, it may not be apparent that the color was red.
+
+* HINT: Here is one way to do this. In in the original `ggplot` command, specify a dataset contains the smokers over 40. In a later command in which you add another layer to the plot, specify a second dataset that has the mean associated with each region.
+```{r}
+
+ins_over_40 <-
+  Ins |>
+  filter(smoker == "yes", age > 40)
+
+means_over_40 <- ins_over_40 |>
+  group_by(region) |>
+  summarize(
+    MeanCharges = mean(charges)
+  )
+
+ggplot(
+  data = ins_over_40,
+  mapping = aes(
+    x = region,
+    y = charges,
+  )
+) + 
+  geom_boxplot() +
+  geom_point(
+    data = means_over_40,
+    mapping = aes(
+      x = region, 
+      y = MeanCharges),
+    color = "red",
+    shape = 6,
+  )
+  
+```
+
+
