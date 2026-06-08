@@ -1,0 +1,38 @@
+---
+title: "Mini Project 3"
+subtitle: "Stat 380 Model Building"
+author: Greer Moran, Sara Murphy
+date: "DUE: Thursday, December 11th"
+output: html_document
+---
+
+# Mini Project 3: Stat 380
+## Model Building
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Front Matter - Clean Environment, Load Libraries, User Defined Functions
+
+```{r}
+rm(list = ls())
+
+#Add libraries as needed
+library(tidyverse)
+library(dplyr)
+library(readxl)
+
+```
+
+### Load
+```{r}
+education_ds <- read_xlsx("/Users/greermoran/Downloads/CODGames2_mp.xlsx")
+
+head(education_ds)
+
+education_ds <- na.omit(education_ds)
+#Gender, wesson = teaching style (traditional versus standards-based), freeredu (1- qualifies for free+reduced meals
+#                                                                                2- does not qualify)
+```
+

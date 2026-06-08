@@ -1,0 +1,164 @@
+---
+title: "Nonparametric K-Sample Permutation"
+author: Greer Moran
+date: "May 4th, 2026"
+output:
+  bookdown::pdf_document2:
+    latex_engine: xelatex
+    fig_caption: true
+    number_sections: false
+    
+bookdown::pdf_document2: default
+---
+
+# Introduction
+
+Today's age of big data - and the manipulation that comes with it - a first step in this analysis is looking at the assumptions.
+
+In statistics, assumptions are conditions that produce valid results by being true. For high volume data sets, the assumption of normal distribution is often compromised and overlooked. With a normal distribution assumption taken for granted, how can the analysis provided be trusted?
+
+This is where nonparametric statistics play a crucial role. While the goals of these nonparametric methods are geared towards smaller data sets, there are not strict distribution assumptions which can allow for real-world extreme values. 
+
+This report aims explores a nonparametric method that can analyze a retail dataset to show the data's structure and variability.
+
+In retail, seasonal intelligence is crucial to brand strategy due to the inferences from previous seasons' markdown prices, sales trends, and inventory. From a nonparametric perspective, seasonal intelligence is an assumption that needs to be verified; Does data distribution differ across seasons at all?
+
+Taking the calendar seasons (Summer, Autumn, Winter, Spring) via a comprehensive fashion retail dataset, this report uses a nonparametric test to explore if customer satisfaction differs across season or not.
+
+    Dataset: https://www.kaggle.com/datasets/pratyushpuri/retail-fashion-boutique-data-sales-analytics-2025/data 
+
+# Methodology
+
+Given the study: **"How does customer satisfaction differ across season, if at all?"**
+and a data set with a numeric ***Customer Rating*** variable across 8 brands, as well as the calendar ***Season*** of that rating, a nonparametric method should be chosen off of these variables' characteristics. 
+
+***Customer Rating*** is a bounded variable 1-5, with 0.1 decimal values included. A permutation test can handle bounded data - continuous data is a parametric assumption that nonparametric methods don't need to worry about.
+
+***Season*** is a categorical variable with 4 characters. A permutation test may only apply in a k-Sample Permutation because the method involved [k=4] treatments.
+
+Further, a k-Sample Permutation is used to explore if the observed differences across seasons are larger [hence exist] than what is expected by chance.
+
+This method is executed through calculating the F-Statistic with distribution $F_{(k-1, N-k)}$. 
+
+  The F-Statistic is a ratio comparing variation between k treatments. 
+  The distribution is defined by k - 1 degrees of freedom, as well as the N observations - k.
+  
+An F-Statistic from a k-Sample Permutation is calculated by the Mean Squares for Treatments (SST) divided by the Mean Squares for Error (MSE).
+
+  F = MST / MSE
+  
+  MST comes from the sum of squares for treatments (SST) divided by k - 1
+  MSE comes from sum of squares for error (SSE) divided by N - k
+  
+To execute these formulas, a normality assumption should be checked.
+These calculations can be done through R functions completely, but this report computes the F statistic by grabbing sum of squares values from an ANOVA [avo()] function.
+After computing the observed F-statistic, a k-Sample Permutation is implemented through Python based r code. 
+  
+  First creating a storage vector, a function is implemented that repeatedly shuffles k seasons across [2176] observations keeping customer rating fixed. A reasonable amount of permutations [1000] are executed to record an F-statistic for the season, to which it was compared to the observed calculated previously.
+  
+A Monte Carlo p-value is computed due to large permutation arrangement, which provides an applicable approximation of the true p-value. This p-value is used to conclude the test hypothesis, rejecting the null only at a 5% significance level.
+
+# Data
+Describe the dataset you selected, including what it represents and which variables are included. You should also explain the analysis you carry out on the data.
+
+The dataset from Kaggle includes an ID variable, a Boolean variable, 6 categorical variables, 6 numerical variables, and 2176 total observations. Using ***Customer Rating*** and ***Season***, the first step is to check normality and get a glimpse of how the customer satisfaction (defined by ***Customer Rating***) distributes across season. 
+
+The analysis to answer: **"How does customer satisfaction differ across season, if at all?"** is executed through a test hypothesis.
+
+$H_{0}: F_{1}(x) = F_{i}(x) \quad \forall i \in \{1, \ldots, k\}$
+$H_{a}: F_i(x) \leq F_j(x) \quad \text{or} \quad F_i(x) \geq F_j(x)$ 
+
+  This represents 
+  $H_{0}=$ Customer rating distributions are the same across all seasons [k] 
+  $H_{a}=$ At least one season [i] has a different distribution of customer ratings [j].
+  
+The test hypothesis is concluded with a p-value at a 5% significance level.
+
+# Conclusion
+
+Via Figure \@ref(fig:customer_ratings), the data appears to show no difference between customer satisfaction and season. However, summer stands out with a higher left tail hence the test hypothesis. 
+
+Before executing the k-sample permutation test, the normality assumption was assessed using a Q-Q plot (Figure \@ref(fig:normality_qq). This reflects a QQ plot used to assess normality. There is clear deviation from the reference line on both ends, indicating no normal distribution and justification that a nonparametric permutation should be used.
+
+At a 5% significance level, the null hypothesis that customer rating distributions are the same across all seasons is rejected. There is significant evidence via a p-value of 0.001 that at least one season has a different distribution of customer ratings. 
+
+The F-Statistic of 0.143 suggests that this difference practically may not show much change. 
+
+However, it is suggested from this analysis that seasonal intelligence is a valid direction for brand strategy. The difference across at least one season will allow for an allocation of resources, emphasis on strengthening service, and knowing when to provide pricing that satisfies customers. 
+
+# Appendix
+### Front Matter
+```{r}
+#Remove all objects from Environment - Use with Caution
+remove(list = ls())
+
+#Add libraries if needed
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(rmarkdown)
+library(ggplot2)
+```
+
+```{r}
+# Load data
+cpi_data <- read.csv("~/Downloads/archive (6)/fashion_boutique_dataset.csv")
+```
+
+### Assumptions
+Are ratings skewed? Does the normality test fail?
+
+
+```{r fig.customer_ratings, fig.cap= "Customer Ratings by Season"}
+boxplot(customer_rating ~ season, data = cpi_data)
+```
+
+```{r fig.normality_qq, fig.cap= "Normality of Customer Rating"}
+qqnorm(cpi_data$customer_rating)
+qqline(cpi_data$customer_rating, col = "red")
+```
+
+### Method
+
+```{r}
+# Get observed statistic
+## Explain F = MST / MSE, slides from Chapter_3 (1)
+
+aov(customer_rating ~ season, cpi_data)
+
+# F = MS(season) / MS(residual)
+# MS_season = F_season / df_season
+ms_season = 0.5791 / 3
+
+# MS_residual = SS / df
+ms_ss = 2437.8254 / 1810
+
+# F = MS(season) / MS(residual)
+obs_f = ms_season / ms_ss
+obs_f
+```
+
+```{r}
+# Create k-sample permutation
+## Establish why we need random sample.
+
+perm_s <- function(cpi_data) {
+  cpi_data$season <- sample(cpi_data$season)
+  cpi_data
+}
+# Perform permutation
+B <- 1000
+F_perm <- numeric(B)
+
+for (b in seq_len(B)) {
+  perm_df <- perm_s(cpi_data)
+  perm_model <- aov(customer_rating ~ season, data = cpi_data)
+  F_perm[b] <- summary(perm_model)[[1]]["season", "F value"]
+}
+
+
+# Get p-value
+
+pval <- (sum(F_perm >= obs_f) + 1) / (length(F_perm) + 1)
+pval
+```
