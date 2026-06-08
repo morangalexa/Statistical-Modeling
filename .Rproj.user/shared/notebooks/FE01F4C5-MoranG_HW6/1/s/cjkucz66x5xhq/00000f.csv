@@ -1,5 +1,0 @@
-"0","#Create ROC curve"
-"0","roc_plot = roc(response = FramVal$TenYearCHD,"
-"0","               predictor = FramVal$pred_prob, "
-"0","               plot = TRUE, print.auc = TRUE, "
-"0","               legacy.axes=TRUE)"
